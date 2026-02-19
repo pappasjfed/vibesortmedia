@@ -1,0 +1,100 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'  # Trigger on semantic version tags (e.g., v1.0.0)
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    name: Build and Release
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch all history for proper versioning
+      
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.20'
+      
+      - name: Get version from tag
+        id: get_version
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/}
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "version_no_v=${VERSION#v}" >> $GITHUB_OUTPUT
+      
+      - name: Run tests
+        run: go test -v ./...
+      
+      - name: Build for Linux (amd64)
+        run: |
+          GOOS=linux GOARCH=amd64 go build -ldflags="-s -w -X main.Version=${{ steps.get_version.outputs.version }}" -o vibesortmedia-linux-amd64
+          chmod +x vibesortmedia-linux-amd64
+      
+      - name: Build for macOS (amd64)
+        run: |
+          GOOS=darwin GOARCH=amd64 go build -ldflags="-s -w -X main.Version=${{ steps.get_version.outputs.version }}" -o vibesortmedia-darwin-amd64
+          chmod +x vibesortmedia-darwin-amd64
+      
+      - name: Build for macOS (arm64)
+        run: |
+          GOOS=darwin GOARCH=arm64 go build -ldflags="-s -w -X main.Version=${{ steps.get_version.outputs.version }}" -o vibesortmedia-darwin-arm64
+          chmod +x vibesortmedia-darwin-arm64
+      
+      - name: Build for Windows (amd64)
+        run: |
+          GOOS=windows GOARCH=amd64 go build -ldflags="-s -w -X main.Version=${{ steps.get_version.outputs.version }}" -o vibesortmedia-windows-amd64.exe
+      
+      - name: Generate checksums
+        run: |
+          sha256sum vibesortmedia-linux-amd64 > checksums.txt
+          sha256sum vibesortmedia-darwin-amd64 >> checksums.txt
+          sha256sum vibesortmedia-darwin-arm64 >> checksums.txt
+          sha256sum vibesortmedia-windows-amd64.exe >> checksums.txt
+      
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          name: Release ${{ steps.get_version.outputs.version }}
+          body: |
+            ## VibeSort Media ${{ steps.get_version.outputs.version }}
+            
+            ### Download
+            
+            Choose the appropriate binary for your platform:
+            - **Linux (x64)**: `vibesortmedia-linux-amd64`
+            - **macOS (Intel)**: `vibesortmedia-darwin-amd64`
+            - **macOS (Apple Silicon)**: `vibesortmedia-darwin-arm64`
+            - **Windows (x64)**: `vibesortmedia-windows-amd64.exe`
+            
+            ### Installation
+            
+            1. Download the appropriate binary for your system
+            2. Make it executable (Linux/macOS): `chmod +x vibesortmedia-*`
+            3. Run: `./vibesortmedia-*` (or `vibesortmedia-windows-amd64.exe` on Windows)
+            
+            ### Verification
+            
+            Verify the download using SHA256 checksums in `checksums.txt`.
+            
+            ### Changelog
+            
+            See commit history for changes in this release.
+          files: |
+            vibesortmedia-linux-amd64
+            vibesortmedia-darwin-amd64
+            vibesortmedia-darwin-arm64
+            vibesortmedia-windows-amd64.exe
+            checksums.txt
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"flag"
 	"fmt"
 	"os"
 	"os/exec"
@@ -9,6 +10,9 @@ import (
 	"strings"
 	"time"
 )
+
+// Version is set during build via -ldflags
+var Version = "dev"
 
 const (
 	ColorReset  = "\033[0m"
@@ -336,7 +340,17 @@ func waitForUserInput() {
 }
 
 func main() {
-	fmt.Println("VibeSort Media - Physical Media Detection")
+	versionFlag := flag.Bool("version", false, "Print version information")
+	flag.BoolVar(versionFlag, "v", false, "Print version information (shorthand)")
+	flag.Parse()
+
+	if *versionFlag {
+		fmt.Printf("VibeSort Media version %s\n", Version)
+		fmt.Printf("Built with %s %s/%s\n", runtime.Version(), runtime.GOOS, runtime.GOARCH)
+		os.Exit(0)
+	}
+
+	fmt.Printf("VibeSort Media v%s - Physical Media Detection\n", Version)
 	fmt.Println("==========================================")
 	fmt.Println()
 
