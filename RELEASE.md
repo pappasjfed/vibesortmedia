@@ -8,6 +8,21 @@ Releases are automatically created via GitHub Actions when you push a version ta
 
 ### Creating a Release
 
+#### Using the Helper Script (Recommended)
+
+```bash
+./scripts/release.sh v1.0.0
+```
+
+The script will:
+- Validate the version format
+- Check for uncommitted changes
+- Run tests
+- Build for all platforms to verify
+- Create and push the tag
+
+#### Manual Release
+
 1. **Ensure all changes are committed and pushed to main**
 
 2. **Create and push a version tag:**

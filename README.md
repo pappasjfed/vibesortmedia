@@ -1,5 +1,8 @@
 # VibeSort Media
 
+[![CI](https://github.com/pappasjfed/vibesortmedia/workflows/CI/badge.svg)](https://github.com/pappasjfed/vibesortmedia/actions/workflows/ci.yml)
+[![Release](https://github.com/pappasjfed/vibesortmedia/workflows/Release/badge.svg)](https://github.com/pappasjfed/vibesortmedia/actions/workflows/release.yml)
+
 A cross-platform physical media detection and identification tool that automatically detects DVD, Blu-ray, and CD media.
 
 ## Features
