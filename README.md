@@ -19,7 +19,7 @@ A cross-platform physical media detection and identification tool that automatic
 ## Installation
 
 ### Prerequisites
-- Go 1.16 or later (for building from source)
+- Go 1.20 or later (for building from source)
 
 ### Building from Source
 

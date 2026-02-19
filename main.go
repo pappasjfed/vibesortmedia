@@ -31,6 +31,24 @@ const (
 	MediaEmpty   MediaType = "Empty"
 )
 
+const (
+	// Size thresholds for media type identification (in bytes)
+	BluRayMinSize = 20000000000 // 20GB - minimum for Blu-ray discs
+	DVDMinSize    = 1000000000  // 1GB - minimum for DVD discs
+	CDMinSize     = 1           // Any size above 0 for CDs
+)
+
+func classifyMediaBySize(size int64) MediaType {
+	if size > BluRayMinSize {
+		return MediaBluRay
+	} else if size > DVDMinSize {
+		return MediaDVD
+	} else if size > CDMinSize {
+		return MediaCD
+	}
+	return MediaUnknown
+}
+
 func getColorForMediaType(mediaType MediaType) string {
 	switch mediaType {
 	case MediaDVD:
@@ -84,14 +102,44 @@ func detectWindowsDrives() []string {
 
 func detectMacOSDrives() []string {
 	var drives []string
-	cmd := exec.Command("diskutil", "list", "-plist")
+	cmd := exec.Command("diskutil", "list")
 	output, err := cmd.Output()
 	if err != nil {
 		return drives
 	}
 
-	if strings.Contains(string(output), "optical") {
-		drives = append(drives, "/dev/disk1")
+	lines := strings.Split(string(output), "\n")
+	for _, line := range lines {
+		if strings.Contains(line, "(external") && (strings.Contains(strings.ToLower(line), "optical") || strings.Contains(line, "disk")) {
+			fields := strings.Fields(line)
+			if len(fields) > 0 {
+				diskName := fields[0]
+				if strings.HasPrefix(diskName, "/dev/disk") {
+					drives = append(drives, diskName)
+				}
+			}
+		}
+	}
+
+	if len(drives) == 0 {
+		cmd = exec.Command("drutil", "status")
+		output, err = cmd.Output()
+		if err == nil && len(output) > 0 {
+			cmd = exec.Command("diskutil", "list")
+			output, _ = cmd.Output()
+			lines = strings.Split(string(output), "\n")
+			for _, line := range lines {
+				if strings.Contains(line, "/dev/disk") {
+					fields := strings.Fields(line)
+					for _, field := range fields {
+						if strings.HasPrefix(field, "/dev/disk") {
+							drives = append(drives, field)
+							break
+						}
+					}
+				}
+			}
+		}
 	}
 
 	return drives
@@ -208,14 +256,7 @@ func identifyWindowsMediaType(drive string) MediaType {
 	if sizeStr != "" && sizeStr != "0" {
 		var size int64
 		fmt.Sscanf(sizeStr, "%d", &size)
-		
-		if size > 20000000000 {
-			return MediaBluRay
-		} else if size > 1000000000 {
-			return MediaDVD
-		} else if size > 0 {
-			return MediaCD
-		}
+		return classifyMediaBySize(size)
 	}
 
 	return MediaUnknown
@@ -262,14 +303,7 @@ func identifyLinuxMediaType(drive string) MediaType {
 			if err == nil {
 				var size int64
 				fmt.Sscanf(string(output), "%d", &size)
-				
-				if size > 20000000000 {
-					return MediaBluRay
-				} else if size > 1000000000 {
-					return MediaDVD
-				} else if size > 0 {
-					return MediaCD
-				}
+				return classifyMediaBySize(size)
 			}
 
 			return MediaDVD

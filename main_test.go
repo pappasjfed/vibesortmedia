@@ -51,3 +51,26 @@ func TestMediaTypeConstants(t *testing.T) {
 		t.Errorf("MediaEmpty constant is incorrect")
 	}
 }
+
+func TestClassifyMediaBySize(t *testing.T) {
+	tests := []struct {
+		name     string
+		size     int64
+		expected MediaType
+	}{
+		{"Blu-ray size", 25000000000, MediaBluRay},
+		{"DVD size", 4700000000, MediaDVD},
+		{"CD size", 700000000, MediaCD},
+		{"Small size", 100, MediaCD},
+		{"Zero size", 0, MediaUnknown},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := classifyMediaBySize(tt.size)
+			if result != tt.expected {
+				t.Errorf("classifyMediaBySize(%d) = %s; want %s", tt.size, result, tt.expected)
+			}
+		})
+	}
+}
